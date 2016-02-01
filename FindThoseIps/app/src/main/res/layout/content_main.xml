@@ -151,7 +151,6 @@
         android:text="These IP ranges are private and cannot be searched: 192.168.0.0 - 192.168.255.255\n172.16.0.0 - 172.31.255.255\n10.0.0.0 - 10.255.255.255      "
         android:id="@+id/textView5"
         android:layout_above="@+id/EnableMaps"
-        android:layout_alignParentStart="true"
-        android:layout_marginBottom="47dp" />
+        android:layout_toEndOf="@+id/textView3" />
 
 </RelativeLayout>

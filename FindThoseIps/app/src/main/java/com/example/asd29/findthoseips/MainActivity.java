@@ -45,8 +45,6 @@ public class MainActivity extends AppCompatActivity {
     private EditText IP2Byte2;
     private EditText IP2Byte3;
     private EditText IP2Byte4;
-    private ProgressBar mprogressbar;
-    private TextView mtextview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,9 +62,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         int NUMBER_OF_PROCESSORS = Runtime.getRuntime().availableProcessors();
-        mprogressbar = (ProgressBar) findViewById(R.id.progressBar);
         initializeTextBoxes();
-        mtextview = (TextView) findViewById(R.id.textView7);
 
     }
 
@@ -344,75 +340,7 @@ public class MainActivity extends AppCompatActivity {
 
 }
 
-    public class APIConnections implements Runnable {
-        private URL url;
-        private HttpURLConnection urlConnection;
-        IPAddress[] ipAddress;
 
-        public APIConnections(IPAddress[] ipAddresses) {
-            ipAddress = ipAddresses;
-        }
-
-        public void run() {
-            try {
-                IpCityResponse resp = new IpCityResponse();
-                //url = new URL("http://api.ipinfodb.com/v3/ip-city/?key=6022030bbf801545b60ebf0c4ad795f19f4eadf1b99f19a6f55c2697cd2caabd&ip=" + ipAddresses.byte1 + "." + curr.byte2 + "." + curr.byte3 + "." + curr.byte4 + "&format=json");
-                urlConnection = (HttpURLConnection) url.openConnection();
-                InputStreamReader in = new InputStreamReader(urlConnection.getInputStream());
-                JsonReader responseReader = new JsonReader(in);
-                responseReader.beginObject();
-                while (responseReader.hasNext()) {
-                    String name = responseReader.nextName();
-                    if (name.equals("statusCode")) {
-                        resp.setStatusCode(responseReader.nextString());
-                    } else if (name.equals("statusMessage")) {
-                        resp.setStatusMessage(responseReader.nextString());
-                    } else if (name.equals("ipAddress")) {
-                        resp.setIpAddress(responseReader.nextString());
-                    } else if (name.equals("countryCode")) {
-                        resp.setCountryCode(responseReader.nextString());
-                    } else if (name.equals("countryName")) {
-                        resp.setCountryName(responseReader.nextString());
-                    } else if (name.equals("regionName")) {
-                        resp.setRegionName(responseReader.nextString());
-                    } else if (name.equals("cityName")) {
-                        resp.setCityName(responseReader.nextString());
-                    } else if (name.equals("zipCode")) {
-                        resp.setZipCode(responseReader.nextString());
-                    } else if (name.equals("latitude")) {
-                        resp.setLatitude(responseReader.nextString());
-                    } else if (name.equals("longitude")) {
-                        resp.setLongitude(responseReader.nextString());
-                    } else if (name.equals("timeZone")) {
-                        resp.setTimeZone(responseReader.nextString());
-                    }
-                }
-                ipCityResponses.add(resp);
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                urlConnection.disconnect();
-            }
-        }
-
-        public ArrayList<IpCityResponse> generateResponses(ArrayList<IPAddress> params) {
-            ipCityResponses = new ArrayList<IpCityResponse>();
-
-            for (IPAddress curr : params) {
-
-
-            }
-            //   });
-
-            //}
-            // try {
-            //      mthreadpool.awaitTermination(10,TimeUnit.SECONDS);
-            //  } catch (InterruptedException e) {
-            //    e.printStackTrace();
-            //  }
-            return ipCityResponses;
-        }
-    }
 
     public class APIConnection extends AsyncTask<ArrayList<IPAddress>, Void, ArrayList<IpCityResponse>> {
         private URL url;
