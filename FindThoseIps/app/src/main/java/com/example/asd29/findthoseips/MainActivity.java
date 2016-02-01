@@ -5,8 +5,6 @@ import com.google.android.gms.maps.model.LatLng;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -17,13 +15,14 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 
@@ -34,9 +33,9 @@ public class MainActivity extends AppCompatActivity {
     public static boolean normalIprange = false;
     public static boolean smallIprange = false;
     public static String LAT_LONG = "mykey";
-    public ArrayList<IPAddress> ipAddresses = null;
-    public ArrayList<IpCityResponse> ipCityResponses = null;
-    public ArrayList<LatLng> latLngs = null;
+    private ArrayList<IPAddress> ipAddresses = null;
+    private ArrayList<IpCityResponse> ipCityResponses = null;
+    private ArrayList<LatLng> latLngs = null;
     private EditText IP1Byte1;
     private EditText IP1Byte2;
     private EditText IP1Byte3;
@@ -62,6 +61,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         int NUMBER_OF_PROCESSORS = Runtime.getRuntime().availableProcessors();
+        BlockingQueue<Runnable> mQueue = new LinkedBlockingQueue<Runnable>();
+        //mthreadpool = new ThreadPoolExecutor(NUMBER_OF_PROCESSORS,NUMBER_OF_PROCESSORS,2,TimeUnit.SECONDS,mQueue);
         initializeTextBoxes();
 
     }
@@ -134,9 +135,11 @@ public class MainActivity extends AppCompatActivity {
             else if(IP1byte1 == IP2byte1 && IP1byte2 == IP2byte2 && IP1byte3==IP2byte3) {
                 smallIprange = true;
             }
+
+
             IPAddress[] rangeAddresses = getAddress();
             try {
-                ipAddresses = (new genrateIPs().execute(rangeAddresses)).get(10000, TimeUnit.MILLISECONDS);
+                ipAddresses = (new genrateIPs().execute(rangeAddresses).get(10000, TimeUnit.MILLISECONDS));
                 ipCityResponses = (new APIConnection().execute(ipAddresses)).get(60000, TimeUnit.MILLISECONDS);
                 latLngs = (new Acquirelatlongs().execute(ipCityResponses)).get(10000, TimeUnit.MILLISECONDS);
 
@@ -197,7 +200,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public class genrateIPs extends AsyncTask<IPAddress[],Integer,ArrayList<IPAddress>> {
+    public class genrateIPs extends AsyncTask<IPAddress[],Void,ArrayList<IPAddress>> {
         @Override
         protected ArrayList<IPAddress> doInBackground(IPAddress[]... params) {
             ArrayList<IPAddress> result = new ArrayList<IPAddress>();
@@ -322,25 +325,88 @@ public class MainActivity extends AppCompatActivity {
 
     public static class Acquirelatlongs extends AsyncTask<ArrayList<IpCityResponse>, Void,ArrayList<LatLng>> {
 
-    @Override
-    protected ArrayList<LatLng> doInBackground(ArrayList<IpCityResponse>... params) {
-        ArrayList<LatLng> latLngs = new ArrayList<LatLng>();
-        if(params[0]==null) {
-            latLngs.add(new LatLng(0,0));
-            return latLngs;
-        } else {
+        @Override
+        protected ArrayList<LatLng> doInBackground(ArrayList<IpCityResponse>... params) {
+            ArrayList<LatLng> latLngs = new ArrayList<LatLng>();
+            if(params[0]==null) {
+                latLngs.add(new LatLng(0,0));
+                return latLngs;
+            } else {
 
-            for (IpCityResponse curr : params[0]) {
-                LatLng newlocation = new LatLng(Double.parseDouble(curr.getLatitude()), Double.parseDouble(curr.getLongitude()));
-                latLngs.add(newlocation);
+                for (IpCityResponse curr : params[0]) {
+                    LatLng newlocation = new LatLng(Double.parseDouble(curr.getLatitude()), Double.parseDouble(curr.getLongitude()));
+                    latLngs.add(newlocation);
+                }
+                return latLngs;
             }
-            return latLngs;
         }
+
     }
 
-}
+    public class APIConnections implements Runnable {
+        private URL url;
+        private HttpURLConnection urlConnection;
+
+        public void run() {
+            try {
+                IpCityResponse resp = new IpCityResponse();
+                //url = new URL("http://api.ipinfodb.com/v3/ip-city/?key=6022030bbf801545b60ebf0c4ad795f19f4eadf1b99f19a6f55c2697cd2caabd&ip=" + ipAddresses.byte1 + "." + curr.byte2 + "." + curr.byte3 + "." + curr.byte4 + "&format=json");
+                urlConnection = (HttpURLConnection) url.openConnection();
+                InputStreamReader in = new InputStreamReader(urlConnection.getInputStream());
+                JsonReader responseReader = new JsonReader(in);
+                responseReader.beginObject();
+                while (responseReader.hasNext()) {
+                    String name = responseReader.nextName();
+                    if (name.equals("statusCode")) {
+                        resp.setStatusCode(responseReader.nextString());
+                    } else if (name.equals("statusMessage")) {
+                        resp.setStatusMessage(responseReader.nextString());
+                    } else if (name.equals("ipAddress")) {
+                        resp.setIpAddress(responseReader.nextString());
+                    } else if (name.equals("countryCode")) {
+                        resp.setCountryCode(responseReader.nextString());
+                    } else if (name.equals("countryName")) {
+                        resp.setCountryName(responseReader.nextString());
+                    } else if (name.equals("regionName")) {
+                        resp.setRegionName(responseReader.nextString());
+                    } else if (name.equals("cityName")) {
+                        resp.setCityName(responseReader.nextString());
+                    } else if (name.equals("zipCode")) {
+                        resp.setZipCode(responseReader.nextString());
+                    } else if (name.equals("latitude")) {
+                        resp.setLatitude(responseReader.nextString());
+                    } else if (name.equals("longitude")) {
+                        resp.setLongitude(responseReader.nextString());
+                    } else if (name.equals("timeZone")) {
+                        resp.setTimeZone(responseReader.nextString());
+                    }
+                }
+                ipCityResponses.add(resp);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                urlConnection.disconnect();
+            }
+        }
+
+        public ArrayList<IpCityResponse> generateResponses(ArrayList<IPAddress> params) {
+            ipCityResponses = new ArrayList<IpCityResponse>();
+
+            for (IPAddress curr : params) {
 
 
+            }
+            //   });
+
+            //}
+            // try {
+            //      mthreadpool.awaitTermination(10,TimeUnit.SECONDS);
+            //  } catch (InterruptedException e) {
+            //    e.printStackTrace();
+            //  }
+            return ipCityResponses;
+        }
+    }
 
     public class APIConnection extends AsyncTask<ArrayList<IPAddress>, Void, ArrayList<IpCityResponse>> {
         private URL url;
@@ -351,46 +417,46 @@ public class MainActivity extends AppCompatActivity {
             ipCityResponses = new ArrayList<IpCityResponse>();
 
             for(IPAddress curr : params[0]) {
-                        try {
-                            IpCityResponse resp = new IpCityResponse();
-                            url = new URL("http://api.ipinfodb.com/v3/ip-city/?key=6022030bbf801545b60ebf0c4ad795f19f4eadf1b99f19a6f55c2697cd2caabd&ip=" +curr.byte1+"."+curr.byte2+"."+curr.byte3+"."+curr.byte4+ "&format=json");
-                            urlConnection = (HttpURLConnection) url.openConnection();
-                            InputStreamReader in = new InputStreamReader(urlConnection.getInputStream());
-                            JsonReader responseReader = new JsonReader(in);
-                            responseReader.beginObject();
-                            while (responseReader.hasNext()) {
-                                String name = responseReader.nextName();
-                                if (name.equals("statusCode")) {
-                                    resp.setStatusCode(responseReader.nextString());
-                                } else if (name.equals("statusMessage")) {
-                                    resp.setStatusMessage(responseReader.nextString());
-                                } else if (name.equals("ipAddress")) {
-                                    resp.setIpAddress(responseReader.nextString());
-                                } else if (name.equals("countryCode")) {
-                                    resp.setCountryCode(responseReader.nextString());
-                                } else if (name.equals("countryName")) {
-                                    resp.setCountryName(responseReader.nextString());
-                                } else if (name.equals("regionName")) {
-                                    resp.setRegionName(responseReader.nextString());
-                                } else if (name.equals("cityName")) {
-                                    resp.setCityName(responseReader.nextString());
-                                } else if (name.equals("zipCode")) {
-                                    resp.setZipCode(responseReader.nextString());
-                                } else if (name.equals("latitude")) {
-                                    resp.setLatitude(responseReader.nextString());
-                                } else if (name.equals("longitude")) {
-                                    resp.setLongitude(responseReader.nextString());
-                                } else if (name.equals("timeZone")) {
-                                    resp.setTimeZone(responseReader.nextString());
-                                }
-                            }
-                            ipCityResponses.add(resp);
-                        } catch (Exception e) {
-
-                        } finally {
-                            urlConnection.disconnect();
+                try {
+                    IpCityResponse resp = new IpCityResponse();
+                    url = new URL("http://api.ipinfodb.com/v3/ip-city/?key=6022030bbf801545b60ebf0c4ad795f19f4eadf1b99f19a6f55c2697cd2caabd&ip=" +curr.byte1+"."+curr.byte2+"."+curr.byte3+"."+curr.byte4+ "&format=json");
+                    urlConnection = (HttpURLConnection) url.openConnection();
+                    InputStreamReader in = new InputStreamReader(urlConnection.getInputStream());
+                    JsonReader responseReader = new JsonReader(in);
+                    responseReader.beginObject();
+                    while (responseReader.hasNext()) {
+                        String name = responseReader.nextName();
+                        if (name.equals("statusCode")) {
+                            resp.setStatusCode(responseReader.nextString());
+                        } else if (name.equals("statusMessage")) {
+                            resp.setStatusMessage(responseReader.nextString());
+                        } else if (name.equals("ipAddress")) {
+                            resp.setIpAddress(responseReader.nextString());
+                        } else if (name.equals("countryCode")) {
+                            resp.setCountryCode(responseReader.nextString());
+                        } else if (name.equals("countryName")) {
+                            resp.setCountryName(responseReader.nextString());
+                        } else if (name.equals("regionName")) {
+                            resp.setRegionName(responseReader.nextString());
+                        } else if (name.equals("cityName")) {
+                            resp.setCityName(responseReader.nextString());
+                        } else if (name.equals("zipCode")) {
+                            resp.setZipCode(responseReader.nextString());
+                        } else if (name.equals("latitude")) {
+                            resp.setLatitude(responseReader.nextString());
+                        } else if (name.equals("longitude")) {
+                            resp.setLongitude(responseReader.nextString());
+                        } else if (name.equals("timeZone")) {
+                            resp.setTimeZone(responseReader.nextString());
                         }
                     }
+                    ipCityResponses.add(resp);
+                } catch (Exception e) {
+
+                } finally {
+                    urlConnection.disconnect();
+                }
+            }
             return ipCityResponses;
         }
 
