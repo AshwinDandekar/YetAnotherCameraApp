@@ -5,53 +5,38 @@ import com.google.android.gms.maps.model.LatLng;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.JsonReader;
-import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
-import android.widget.NumberPicker;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
-import java.net.Inet4Address;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.io.InputStream;
-import java.io.BufferedInputStream;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 
 public class MainActivity extends AppCompatActivity {
 
-    public Boolean QueryComplete = false;
-    public Boolean IpGenerated = false;
-    public Boolean LatLongsGenerated = false;
-    public boolean Ip1GreaterthanIp2 = true;
-    public boolean wrongIprange = false;
-    private ThreadPoolExecutor mthreadpool;
+    public boolean Ip1GreaterthanIp2;
+    public static boolean largeIprange = false;
+    public static boolean normalIprange = false;
+    public static boolean smallIprange = false;
     public static String LAT_LONG = "mykey";
-    private ArrayList<IPAddress> ipAddresses = null;
-    private ArrayList<IpCityResponse> ipCityResponses = null;
-    private ArrayList<LatLng> latLngs = null;
+    public ArrayList<IPAddress> ipAddresses = null;
+    public ArrayList<IpCityResponse> ipCityResponses = null;
+    public ArrayList<LatLng> latLngs = null;
     private EditText IP1Byte1;
     private EditText IP1Byte2;
     private EditText IP1Byte3;
@@ -60,6 +45,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText IP2Byte2;
     private EditText IP2Byte3;
     private EditText IP2Byte4;
+    private ProgressBar mprogressbar;
+    private TextView mtextview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,9 +64,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         int NUMBER_OF_PROCESSORS = Runtime.getRuntime().availableProcessors();
-        BlockingQueue<Runnable> mQueue = new LinkedBlockingQueue<Runnable>();
-        mthreadpool = new ThreadPoolExecutor(NUMBER_OF_PROCESSORS,NUMBER_OF_PROCESSORS,2,TimeUnit.SECONDS,mQueue);
+        mprogressbar = (ProgressBar) findViewById(R.id.progressBar);
         initializeTextBoxes();
+        mtextview = (TextView) findViewById(R.id.textView7);
 
     }
 
@@ -106,51 +93,65 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void enableMapsClicked(View v) {
-       if(IP1Byte1.getText().toString().matches("") || IP1Byte3.getText().toString().matches("") || IP1Byte2.getText().toString().matches("") || IP1Byte4.getText().toString().matches("") ||
-               IP2Byte1.getText().toString().matches("")|| IP2Byte2.getText().toString().matches("") || IP2Byte3.getText().toString().matches("") || IP2Byte4.getText().toString().matches("")) {
-           Toast.makeText(this, "Invalid Input! One byte will have 0-255", Toast.LENGTH_LONG).show();
-           return;
-       } else {
-           int IP1byte1 = Integer.parseInt(IP1Byte1.getText().toString());
-           int IP1byte2 = Integer.parseInt(IP1Byte2.getText().toString());
-           int IP2byte1 = Integer.parseInt(IP2Byte1.getText().toString());
-           int IP2byte2 = Integer.parseInt(IP2Byte2.getText().toString());
-           int IP2byte3 = Integer.parseInt(IP2Byte3.getText().toString());
-           int IP2byte4 = Integer.parseInt(IP2Byte4.getText().toString());
-           int IP1byte4 = Integer.parseInt(IP1Byte4.getText().toString());
-           int IP1byte3 = Integer.parseInt(IP1Byte3.getText().toString());
 
+        if(IP1Byte1.getText().toString().matches("") || IP1Byte3.getText().toString().matches("") || IP1Byte2.getText().toString().matches("") || IP1Byte4.getText().toString().matches("") ||
+                IP2Byte1.getText().toString().matches("")|| IP2Byte2.getText().toString().matches("") || IP2Byte3.getText().toString().matches("") || IP2Byte4.getText().toString().matches("")) {
+            Toast.makeText(this, "Invalid Input! One byte will have 0-255", Toast.LENGTH_LONG).show();
+            return;
+        } else {
+            int IP1byte1 = Integer.parseInt(IP1Byte1.getText().toString());
+            int IP1byte2 = Integer.parseInt(IP1Byte2.getText().toString());
+            int IP2byte1 = Integer.parseInt(IP2Byte1.getText().toString());
+            int IP2byte2 = Integer.parseInt(IP2Byte2.getText().toString());
+            int IP2byte3 = Integer.parseInt(IP2Byte3.getText().toString());
+            int IP2byte4 = Integer.parseInt(IP2Byte4.getText().toString());
+            int IP1byte4 = Integer.parseInt(IP1Byte4.getText().toString());
+            int IP1byte3 = Integer.parseInt(IP1Byte3.getText().toString());
 
-           if ((IP1byte1 < 0 || IP1byte1 > 255) || (IP1byte2 < 0 || IP1byte2 > 255) || (IP1byte3 < 0 || IP1byte3 > 255) || (IP1byte4 < 0 || IP1byte4 > 255) || (IP2byte1 < 0 || IP2byte1 > 255) || (IP2byte2 < 0 || IP2byte2 > 255) || (IP2byte3 < 0 || IP2byte3 > 255) || (IP2byte4 < 0 || IP2byte4 > 255)) {
-               Toast.makeText(this, "Invalid Input! One byte will have 0-255", Toast.LENGTH_LONG).show();
-               return;
-           }
+            if ((IP1byte1 < 0 || IP1byte1 > 255) || (IP1byte2 < 0 || IP1byte2 > 255) || (IP1byte3 < 0 || IP1byte3 > 255) || (IP1byte4 < 0 || IP1byte4 > 255) || (IP2byte1 < 0 || IP2byte1 > 255) || (IP2byte2 < 0 || IP2byte2 > 255) || (IP2byte3 < 0 || IP2byte3 > 255) || (IP2byte4 < 0 || IP2byte4 > 255)) {
+                Toast.makeText(this, "Invalid Input! One byte will have 0-255", Toast.LENGTH_LONG).show();
+                return;
+            }
 
-           if ((IP1byte1 == 192 && IP1byte2 == 168) || IP1byte1 == 10 || (IP1byte1 == 172 && (IP1byte2 == 16 || IP1byte2 == 31))) {
-               Toast.makeText(this, "the From IP is in the reserved IP range", Toast.LENGTH_LONG).show();
-               return;
+            if ((IP1byte1 == 192 && IP1byte2 == 168) || IP1byte1 == 10 || (IP1byte1 == 172 && (IP1byte2 == 16 || IP1byte2 == 31))) {
+                Toast.makeText(this, "the From IP is in the reserved IP range", Toast.LENGTH_LONG).show();
+                return;
 
-           } else if ((IP2byte1 == 192 && IP2byte2 == 168) || IP2byte1 == 10 || (IP2byte1 == 172 && (IP2byte2 == 16 || IP2byte2 == 31))) {
-               Toast.makeText(this, "the To IP is in the reserved IP range", Toast.LENGTH_LONG).show();
-               return;
-           }
+            } else if ((IP2byte1 == 192 && IP2byte2 == 168) || IP2byte1 == 10 || (IP2byte1 == 172 && (IP2byte2 == 16 || IP2byte2 == 31))) {
+                Toast.makeText(this, "the To IP is in the reserved IP range", Toast.LENGTH_LONG).show();
+                return;
+            }
 
-               IPAddress[] rangeAddresses = getAddress();
-               try {
-                   ipAddresses = (new genrateIPs().execute(rangeAddresses)).get(10000, TimeUnit.MILLISECONDS);
-                   ipCityResponses = (new APIConnection().execute(ipAddresses)).get(10, TimeUnit.SECONDS);
+            if(IP1byte1-IP2byte1  >0 || IP2byte1 - IP1byte1 >0 ) {
+                Toast.makeText(this,"You are trying to locate over 16777216 Ips select a shorter range!",Toast.LENGTH_LONG).show();
+                return;
+            }
+            if(IP1byte1==IP2byte1 && (IP1byte2-IP2byte2 > 0 || IP2byte2-IP1byte2>0)) {
+                largeIprange = true;
 
-                   //ipCityResponses = (new APIConnection().execute(ipAddresses)).get(20000, TimeUnit.MILLISECONDS);
-                   latLngs = (new Acquirelatlongs().execute(ipCityResponses)).get(10000, TimeUnit.MILLISECONDS);
+            }else if (IP1byte1 == IP2byte1 && IP1byte2 == IP2byte2 && (IP1byte3 - IP2byte3 > 0 || IP2byte3 - IP1byte3 > 0)) {
+                normalIprange = true;
+            } else if(IP1byte1 == IP2byte1 && IP1byte2 == IP2byte2 && (IP1byte3 - IP2byte3 > 0 || IP2byte3 - IP1byte3 > 0)) {
+                largeIprange = true;
 
-               } catch (Exception e) {
-                   e.printStackTrace();
-               }
-               Intent intent = new Intent(this, MapsActivity.class);
-               intent.putExtra(LAT_LONG, latLngs);
-               startActivity(intent);
+            }
+            else if(IP1byte1 == IP2byte1 && IP1byte2 == IP2byte2 && IP1byte3==IP2byte3) {
+                smallIprange = true;
+            }
+            IPAddress[] rangeAddresses = getAddress();
+            try {
+                ipAddresses = (new genrateIPs().execute(rangeAddresses)).get(10000, TimeUnit.MILLISECONDS);
+                ipCityResponses = (new APIConnection().execute(ipAddresses)).get(60000, TimeUnit.MILLISECONDS);
+                latLngs = (new Acquirelatlongs().execute(ipCityResponses)).get(10000, TimeUnit.MILLISECONDS);
 
-       }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            Intent intent = new Intent(this, MapsActivity.class);
+            intent.putExtra(LAT_LONG, latLngs);
+            startActivity(intent);
+
+        }
     }
 
     public void initializeTextBoxes() {
@@ -171,99 +172,174 @@ public class MainActivity extends AppCompatActivity {
         rangeAddresses[0] = new IPAddress(Integer.parseInt(IP1Byte1.getText().toString()),Integer.parseInt(IP1Byte2.getText().toString()),Integer.parseInt(IP1Byte3.getText().toString()), Integer.parseInt(IP1Byte4.getText().toString()));
         rangeAddresses[1] = new IPAddress(Integer.parseInt(IP2Byte1.getText().toString()), Integer.parseInt(IP2Byte2.getText().toString()),Integer.parseInt(IP2Byte3.getText().toString()), Integer.parseInt(IP2Byte4.getText().toString()));
 
+        Ip1GreaterthanIp2 = checkIps();
+
+
         return rangeAddresses;
     }
 
-    public class genrateIPs extends AsyncTask<IPAddress[],Void,ArrayList<IPAddress>> {
-        @Override
-        protected ArrayList<IPAddress> doInBackground(IPAddress[]... params) {
-            ArrayList<IPAddress> result = new ArrayList<IPAddress>();
-           if(Ip1GreaterthanIp2) {
-               int byte1 = params[0][1].getByte1();
-               int byte2 = params[0][1].getByte2();
-               int byte3 = params[0][1].getByte3();
-               int byte4 = params[0][1].getByte4();
-               boolean firstk=true;
-               boolean firstj=true;
-               boolean firstl=true;
+    public boolean checkIps () {
+        int IP1byte1 = Integer.parseInt(IP1Byte1.getText().toString());
+        int IP1byte2 = Integer.parseInt(IP1Byte2.getText().toString());
+        int IP2byte1 = Integer.parseInt(IP2Byte1.getText().toString());
+        int IP2byte2 = Integer.parseInt(IP2Byte2.getText().toString());
+        int IP2byte3 = Integer.parseInt(IP2Byte3.getText().toString());
+        int IP2byte4 = Integer.parseInt(IP2Byte4.getText().toString());
+        int IP1byte4 = Integer.parseInt(IP1Byte4.getText().toString());
+        int IP1byte3 = Integer.parseInt(IP1Byte3.getText().toString());
 
-               for(int i=byte1;i<=params[0][0].getByte1();i++) {
-                   outerloop:
-                   for(int j=0;j<256;j++) {
-                       if(firstj) {
-                           firstj=false;
-                           j=byte2;
-                       }
-                       for(int k=0;k<256;k++) {
-                           if(firstk) {
-                               firstk=false;
-                               k=byte3;
-                           }
-                           for(int l=0;l<256;l++) {
-                            if(firstl) {
-                                firstl=false;
-                                l=byte4;
-                            }
-                               System.out.println(i+"."+j+"."+k+"."+l);
-                               result.add(new IPAddress(i, j, k, l));
-                               if(!firstj&!firstk&!firstl && i==params[0][0].getByte1() && j==params[0][0].getByte2() && k==params[0][0].getByte3() && l==params[0][0].getByte4()) {
-                                   break outerloop;
-                               }
-                           }
-                       }
-                   }
-               }
-
-           } else if(!Ip1GreaterthanIp2) {
-               int byte1 = params[0][0].getByte1();
-               int byte2 = params[0][0].getByte2();
-               int byte3 = params[0][0].getByte3();
-               int byte4 = params[0][0].getByte4();
-               boolean firstk=true;
-               boolean firstj=true;
-               boolean firstl=true;
-
-               for(int i=byte1;i<params[0][1].getByte1();i++) {
-                   for(int j=0;j<256;j++) {
-                       if(firstj) {
-                           firstj=false;
-                           j=byte2;
-                       }
-                       for(int k=0;k<256;k++) {
-                           if(firstk) {
-                               firstk=false;
-                               k=byte3;
-                           }
-                           for(int l=0;l<256;l++) {
-                               if(firstl) {
-                                   firstl=false;
-                                   l=byte4;
-                               }
-                               result.add(new IPAddress(i,j,k,l));
-                               if(!firstj&!firstk&!firstl && i==params[0][1].getByte1() && j==params[0][1].getByte2() && k==params[0][1].getByte3() && l==params[0][1].getByte4()) {
-                                   break;
-                               }
-                           }
-                       }
-                   }
-               }
-           }
-            return result;
+        if (IP1byte1 > IP2byte1) {
+            return true;
+        } else if ((IP1byte1 == IP2byte1 && IP1byte2 > IP2byte2)) {
+            return true;
+        } else if ((IP1byte1 == IP1byte1 && IP1byte2 == IP2byte2 && IP1byte3 > IP2byte3)) {
+            return true;
+        } else if ((IP1byte1 == IP1byte1 && IP1byte2 == IP2byte2 && IP1byte3 == IP2byte3 && IP1byte4 > IP2byte4)) {
+            return true;
+        } else {
+            return false;
         }
     }
 
+    public class genrateIPs extends AsyncTask<IPAddress[],Integer,ArrayList<IPAddress>> {
+        @Override
+        protected ArrayList<IPAddress> doInBackground(IPAddress[]... params) {
+            ArrayList<IPAddress> result = new ArrayList<IPAddress>();
+            if(params[0]==null) {
+                result.add(new IPAddress(0,0,0,0));
+                return result;
+            }
+            else {
 
+                if (Ip1GreaterthanIp2) {
+                    int byte1 = params[0][1].getByte1();
+                    int byte2 = params[0][1].getByte2();
+                    int byte3 = params[0][1].getByte3();
+                    int byte4 = params[0][1].getByte4();
+                    boolean firstk = true;
+                    boolean firstj = true;
+                    boolean firstl = true;
+                    int lIncrement = 1;
+                    int kIncrement = 1;
+                    if (largeIprange) {
+                        lIncrement = 100;
+                        kIncrement = 10;
+                    } else if (normalIprange) {
+                        lIncrement = 50;
+                    } else if (smallIprange) {
+                        lIncrement = 1;
+                    }
 
-public class Acquirelatlongs extends AsyncTask<ArrayList<IpCityResponse>, Void,ArrayList<LatLng>> {
+                    for (int i = byte1; i <= params[0][0].getByte1(); i++) {
+                        outerloop:
+                        for (int j = 0; j < 256; j++) {
+                            if (firstj) {
+                                firstj = false;
+                                j = byte2;
+                            }
+                            for (int k = 0; k < 256; k += kIncrement) {
+                                if (firstk) {
+                                    firstk = false;
+                                    k = byte3;
+                                }
+                                for (int l = 0; l < 256; l += lIncrement) {
+                                    if (firstl) {
+                                        firstl = false;
+                                        l = byte4;
+                                    }
+                                    System.out.println(i + "." + j + "." + k + "." + l);
+                                    result.add(new IPAddress(i, j, k, l));
+                                    if (!firstj & !firstk & !firstl && i == params[0][0].getByte1() && j == params[0][0].getByte2() && k >= params[0][0].getByte3()) {
+                                        if(smallIprange && l == params[0][0].getByte4() &&!firstl) {
+                                            break outerloop;
+                                        }
+                                        else if(normalIprange &&!firstl && l > params[0][0].getByte4()){
+                                            break outerloop;
+                                        }
+                                        else if(largeIprange &&!firstk && (k>params[0][0].getByte3())) {
+                                            break outerloop;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                } else if (!Ip1GreaterthanIp2) {
+                    int byte1 = params[0][0].getByte1();
+                    int byte2 = params[0][0].getByte2();
+                    int byte3 = params[0][0].getByte3();
+                    int byte4 = params[0][0].getByte4();
+                    boolean firstk = true;
+                    boolean firstj = true;
+                    boolean firstl = true;
+                    int lIncrement = 1;
+                    int kIncrement = 1;
+                    if (largeIprange) {
+                        lIncrement = 100;
+                        kIncrement = 10;
+                    } else if (normalIprange) {
+                        lIncrement = 50;
+                    } else if (smallIprange) {
+                        lIncrement = 1;
+                    }
+
+                    for (int i = byte1; i <= params[0][1].getByte1(); i++) {
+                        outerloop:
+                        for (int j = 0; j < 256; j++) {
+                            if (firstj) {
+                                firstj = false;
+                                j = byte2;
+                            }
+                            for (int k = 0; k < 256; k += kIncrement) {
+                                if (firstk) {
+                                    firstk = false;
+                                    k = byte3;
+                                }
+                                for (int l = 0; l < 256; l += lIncrement) {
+                                    if (firstl) {
+                                        firstl = false;
+                                        l = byte4;
+                                    }
+                                    System.out.println(i + "." + j + "." + k + "." + l);
+                                    result.add(new IPAddress(i, j, k, l));
+                                    if (!firstj & !firstk & !firstl && i == params[0][1].getByte1() && j == params[0][1].getByte2() && k >= params[0][1].getByte3()) {
+                                        if(smallIprange && l == params[0][0].getByte4() &&!firstl) {
+                                            break outerloop;
+                                        }
+                                        else if(normalIprange && l > params[0][0].getByte4() &&!firstl){
+                                            break outerloop;
+                                        }
+                                        else if(largeIprange &&!firstk && (k>params[0][0].getByte3())) {
+                                            break outerloop;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return result;
+            }
+        }
+    }
+
+    public static class Acquirelatlongs extends AsyncTask<ArrayList<IpCityResponse>, Void,ArrayList<LatLng>> {
 
     @Override
     protected ArrayList<LatLng> doInBackground(ArrayList<IpCityResponse>... params) {
         ArrayList<LatLng> latLngs = new ArrayList<LatLng>();
-        for(IpCityResponse curr:params[0]) {
-            LatLng newlocation = new LatLng(Double.parseDouble(curr.getLatitude()),Double.parseDouble(curr.getLongitude()));
-            latLngs.add(newlocation);
+        if(params[0]==null) {
+            latLngs.add(new LatLng(0,0));
+            return latLngs;
+        } else {
+
+            for (IpCityResponse curr : params[0]) {
+                LatLng newlocation = new LatLng(Double.parseDouble(curr.getLatitude()), Double.parseDouble(curr.getLongitude()));
+                latLngs.add(newlocation);
+            }
+            return latLngs;
         }
-        return latLngs;
     }
 
 }
@@ -271,6 +347,11 @@ public class Acquirelatlongs extends AsyncTask<ArrayList<IpCityResponse>, Void,A
     public class APIConnections implements Runnable {
         private URL url;
         private HttpURLConnection urlConnection;
+        IPAddress[] ipAddress;
+
+        public APIConnections(IPAddress[] ipAddresses) {
+            ipAddress = ipAddresses;
+        }
 
         public void run() {
             try {
@@ -387,4 +468,13 @@ public class Acquirelatlongs extends AsyncTask<ArrayList<IpCityResponse>, Void,A
 
     }
 
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+            largeIprange = false;
+            normalIprange = false;
+            smallIprange = false;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
 }

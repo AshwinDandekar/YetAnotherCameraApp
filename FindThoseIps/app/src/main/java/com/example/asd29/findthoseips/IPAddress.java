@@ -11,7 +11,6 @@ public class IPAddress extends Object {
     int byte3;
     int byte4;
 
-
     public IPAddress(int inputbyte1 ,int inputbyte2, int inputbyte3, int inputbyte4) {
         this.byte1 = inputbyte1;
         this.byte2 = inputbyte2;
