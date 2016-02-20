@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">YetAnotherCameraApp</string>
+    <string name="title_activity_capture_feed">CaptureFeed</string>
+    <string name="title_activity_capture_screen">CaptureScreen</string>
+    <string name="title_activity_feed_screen">FeedScreen</string>
+</resources>
